@@ -118,7 +118,6 @@ endf
 
 " Repeats the last motion.
 func! s:rpt(op, reverse) abort
-  echo a:reverse
   if s:st.rst "reset by f/F/t/T
     exec "norm! ".(sneak#util#isvisualop(a:op) ? "gv" : "").v:count1.(a:reverse ? "," : ";")
     return
@@ -208,7 +207,7 @@ func! sneak#to(op, input, inputlen, count, repeatmotion, reverse, inclusive, lab
   for i in range(1, max([1, skip])) "jump to the [count]th match
     if s:key_idx < (len(s:pylist))
        echo s:pylist[s:key_idx]
-       if !s:initsearch && !a:reverse
+       if !s:initsearch && !a:reverse && s:ccount>0
            exec 'norm! ' . s:ccount . 'l'
        endif
        let s:ccount = sneak#util#countchar(s:pylist[s:key_idx]) - 1 

@@ -52,22 +52,6 @@ def find_next(line):
     else:
         return r - charlen
 
-        #def hitlist_original(t,rev,cl):
-        #    ret = []
-        #    if rev: buftext = buf[:cl-1]+[t]
-        #    else:
-        #        buftext = [t] + buf[cl:]
-        #    text = ''.join(map(lambda x : x.strip(), buftext))
-        #    l = 0
-        #    while True:
-        #        r = find_next(text[l:])
-        #        if r >= 0:
-        #            word = text[(l + r) : (l + r + charlen)]
-        #            ret.append(word)
-        #            l = l + r + 1
-        #        else :
-        #            return ret
-
 def hitlist(t,r,cl):
     hits = []
     if r:
@@ -83,7 +67,7 @@ def hitlist(t,r,cl):
             hp = find_next(line[l:])
             if hp >= 0:
                 word = line[(l + hp) : (l + hp + charlen)]
-                if h>0 and hp == 0 and linehits[-1][-1] == word[0] and len(set(word)) ==1:
+                if charlen>1 and h>0 and hp == 0 and linehits[-1][-1] == word[0] and len(set(word)) ==1:
                     linehits[-1] += word
                 else:
                     linehits.append(word)
