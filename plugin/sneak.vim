@@ -84,16 +84,21 @@ func! sneak#wrap(op, inputlen, reverse, inclusive, label) abort
     endif
 
     " Prompt for input.
-"Mod start
-    let s:inputchar = s:getnchars(a:inputlen, a:op) 
-    let s:rstate = a:reverse
-    call Pyhitsearch(s:inputchar, a:reverse)
-    if len(s:pylist)==0
-        call sneak#to(a:op, '', a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
+    if g:pysneak 
+        "Mod start
+            let s:inputchar = s:getnchars(a:inputlen, a:op) 
+            let s:rstate = a:reverse
+            call Pyhitsearch(s:inputchar, a:reverse)
+            if len(s:pylist)==0
+                call sneak#to(a:op, '', a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
+            else
+                call sneak#to(a:op, s:pylist, a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
+            endif
+        "Mod end
     else
-        call sneak#to(a:op, s:pylist, a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
+        call sneak#to(a:op, s:getnchars(a:inputlen, a:op), a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
     endif
-"Mod end
+
     if exists('#User#SneakLeave')
       doautocmd <nomodeline> User SneakLeave
     endif
@@ -106,17 +111,24 @@ func! s:rpt(op, reverse) abort
     exec "norm! ".(sneak#util#isvisualop(a:op) ? "gv" : "").v:count1.(a:reverse ? "," : ";")
     return
   endif
-" Mod start
-  let l:relative_reverse = (a:reverse && !s:rstate) || (!a:reverse && s:rstate)  
-  call Pyhitsearch(s:inputchar, l:relative_reverse) 
-  if len(s:pylist)==0
-     echo 'no hit'
-     call sneak#to(a:op, '', s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 0)
+
+  if g:pysneak
+    " Mod start
+      let l:relative_reverse = (a:reverse && !s:rstate) || (!a:reverse && s:rstate)  
+      call Pyhitsearch(s:inputchar, l:relative_reverse) 
+      if len(s:pylist)==0
+         echo 'no hit'
+         call sneak#to(a:op, '', s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 0)
+      else
+         echo s:pylist
+         call sneak#to(a:op, s:pylist, s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 1)
+      endif
+    "Mod end
   else
-     echo s:pylist
-     call sneak#to(a:op, s:pylist, s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 1)
+      let l:relative_reverse = (a:reverse && !s:st.reverse) || (!a:reverse && s:st.reverse)
+      call sneak#to(a:op, s:st.input, s:st.inputlen, v:count1, 1,
+            \ (g:sneak#opt.absolute_dir ? a:reverse : l:relative_reverse), s:st.inclusive, 0)
   endif
-"Mod end
 endf
 
 " Mod start
@@ -195,7 +207,7 @@ func! sneak#to(op, input, inputlen, count, repeatmotion, reverse, inclusive, lab
     call s:ft_hook()
   endif
 
-  let nudge = !a:inclusive && a:repeatmotion && nextchar == searchpos(a:input,'nW'.(a:reverse? 'b':''))
+  let nudge = !a:inclusive && a:repeatmotion && nextchar == s.dosearch('n') 
   if nudge
     let nudge = sneak#util#nudge(!a:reverse) "special case for t
   endif
@@ -206,6 +218,7 @@ func! sneak#to(op, input, inputlen, count, repeatmotion, reverse, inclusive, lab
     else
         let nudge = !a:inclusive
     endif
+
   endfor
 
   if nudge && (!is_v || max(matchpos) > 0)
