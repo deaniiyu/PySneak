@@ -2,6 +2,7 @@ func! sneak#pySearch#Pinyin(table, char, curlin, ttle,reverse)
     call clearmatches()
 py3 << EOF
 import vim,sys,pickle
+from textwrap import wrap
 ENCODING = vim.eval("&fileencoding")
 if not ENCODING or ENCODING == 'none':
     ENCODING = 'utf-8'
@@ -17,19 +18,6 @@ cur = vim.current; window = cur.window; buf = cur.buffer
 with open(table,'rb') as f:
     Dict = pickle.load(f)
     f.close()
-
-def char2dict(char):
-    flags = 0
-    r = 0
-    for c in char:
-        try:
-            t = Dict[c]
-        except KeyError:
-            t = c
-        if chars[r] in t:
-            flags += 1
-        r += 1
-    return (flags==charlen)
 
 def find_next(line):
     flag = r = 0
@@ -52,41 +40,43 @@ def find_next(line):
     else:
         return r - charlen
 
-def hitlist(t,r,cl):
-    hits = []
+def hit(t,r,cl):
     if r:
-        text = buf[:cl-1]+[t]
+        buftext = buf[:cl-1]
+        buftext.reverse()
     else: 
-        text = [t] + buf[cl:]
+        buftext = buf[cl:]
+    text = [t] + buftext
     for line in text:
         line.strip()
+        hp = 0
         l = 0
-        h = 0
-        linehits = []
+        hits = []
         while True:
             hp = find_next(line[l:])
-            if hp >= 0:
+            if hp>= 0: 
                 word = line[(l + hp) : (l + hp + charlen)]
-                if charlen>1 and h>0 and hp == 0 and linehits[-1][-1] == word[0] and len(set(word)) ==1:
-                    linehits[-1] += word
-                else:
-                    linehits.append(word)
-                    h = 1
-                l = l + hp + charlen
+                hits.append(word)
+                l = l + hp + 1
             else:
                 break
-        hits += linehits
-    return hits
+        if hits:
+            break
+    if hits:
+        if r:
+            return hits[-1]
+        else:
+            return hits[0]
+    else:
+        return ''
 
-def gen_list():
+def gen_hit():
     if charlen == 0:
         return []
     else: 
-        return hitlist(ttle,reverse,curlin)
+        return hit(ttle,reverse,curlin)
 
-result = gen_list()
-if reverse:
-    result.reverse()
+result = gen_hit()
 EOF
 return py3eval('result')
 endfunc

@@ -71,8 +71,6 @@ endf
 func! sneak#wrap(op, inputlen, reverse, inclusive, label) abort
   let cnt = v:count1 "get count before doing _anything_, else it gets overwritten.
   let is_similar_invocation = a:inputlen == s:st.inputlen && a:inclusive == s:st.inclusive
-  let s:initsearch = 1
-  let s:rstate = a:reverse
   if g:sneak#opt.s_next && is_similar_invocation && (sneak#util#isvisualop(a:op) || empty(a:op)) && sneak#is_sneaking()
     " Repeat motion (clever-s).
     call s:rpt(a:op, a:reverse)
@@ -85,31 +83,17 @@ func! sneak#wrap(op, inputlen, reverse, inclusive, label) abort
       redraw
     endif
 
-    " #PySneak mod start
-    "preserve content of register -
-    let regsave = @- 
-    "if not searching backward, yank from current cursor position to current line end
-    if !a:reverse 
-        exec "norm! " . "l\"-y\$h" 
-    "if searching backward, yank from current cursor position to current line start
-    else 
-        exec "norm! " . "\"-y0`]"
-    endif
-    let ttle = @-
-    "restore register -
-    let @- = regsave 
     " Prompt for input.
-    " Python script, generate a list of keywords to jump to
-    let s:pylist = sneak#pySearch#Pinyin(g:PinyinSearch_Dict,s:getnchars(a:inputlen, a:op),line('.'),ttle,a:reverse)
-    let s:key_idx = 0
-    " search functionality
+"Mod start
+    let s:inputchar = s:getnchars(a:inputlen, a:op) 
+    let s:rstate = a:reverse
+    call Pyhitsearch(s:inputchar, a:reverse)
     if len(s:pylist)==0
         call sneak#to(a:op, '', a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
     else
-        call sneak#to(a:op, s:pylist[0], a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
+        call sneak#to(a:op, s:pylist, a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
     endif
-    let s:initsearch = 0
-    " #PySneak mod end
+"Mod end
     if exists('#User#SneakLeave')
       doautocmd <nomodeline> User SneakLeave
     endif
@@ -122,21 +106,32 @@ func! s:rpt(op, reverse) abort
     exec "norm! ".(sneak#util#isvisualop(a:op) ? "gv" : "").v:count1.(a:reverse ? "," : ";")
     return
   endif
-
-  " let l:relative_reverse = (a:reverse && !s:st.reverse) || (!a:reverse && s:st.reverse)
-  let l:relative_reverse = (a:reverse && !s:rstate) || (!a:reverse && s:rstate)
-  if (l:relative_reverse == s:rstate) && (s:key_idx < (len(s:pylist)) - 1 )
-     let s:key_idx += 1
-     call sneak#to(a:op,s:pylist[s:key_idx], s:st.inputlen, v:count1, 1,
-           \ l:relative_reverse, s:st.inclusive, 0)
-     " call sneak#to(a:op,s:pylist[s:key_idx], s:st.inputlen, v:count1, 1,
-     "       \ (g:sneak#opt.absolute_dir ? a:reverse : l:relative_reverse), s:st.inclusive, 0)
-  elseif !(l:relative_reverse == s:rstate) && (s:key_idx >0 )
-     let s:key_idx -= 1
-     call sneak#to(a:op,s:pylist[s:key_idx], s:st.inputlen, v:count1, 1,
-           \ l:relative_reverse, s:st.inclusive, 1)
+" Mod start
+  let l:relative_reverse = (a:reverse && !s:rstate) || (!a:reverse && s:rstate)  
+  call Pyhitsearch(s:inputchar, l:relative_reverse) 
+  if len(s:pylist)==0
+     echo 'no hit'
+     call sneak#to(a:op, '', s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 0)
+  else
+     echo s:pylist
+     call sneak#to(a:op, s:pylist, s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 1)
   endif
+"Mod end
 endf
+
+" Mod start
+func! Pyhitsearch(input, reverse)
+  let regsave = @- 
+  if !a:reverse
+      exec "norm! " . "l\"-y\$h" 
+  else 
+      exec "norm! " . "\"-y0`]"
+  endif
+  let ttle = @-
+  let @- = regsave 
+  let s:pylist = sneak#pySearch#Pinyin(g:PinyinSearch_Dict, a:input, line('.'), ttle, a:reverse)
+endf
+"Mod end
 
 " input:      may be shorter than inputlen if the user pressed <enter> at the prompt.
 " inclusive:  0: t-like, 1: f-like, 2: /-like
@@ -205,25 +200,11 @@ func! sneak#to(op, input, inputlen, count, repeatmotion, reverse, inclusive, lab
     let nudge = sneak#util#nudge(!a:reverse) "special case for t
   endif
   for i in range(1, max([1, skip])) "jump to the [count]th match
-    if s:key_idx < (len(s:pylist))
-       echo s:pylist[s:key_idx]
-       if !s:initsearch && !a:reverse && s:ccount>0
-           exec 'norm! ' . s:ccount . 'l'
-       endif
-       let s:ccount = sneak#util#countchar(s:pylist[s:key_idx]) - 1 
-       let matchpos = searchpos(s:pylist[s:key_idx],'W'.(a:reverse? 'b':''))
-       if 0 == max(matchpos)
-           break
-       else
-           let nudge = !a:inclusive
-       endif
+    let matchpos = s.dosearch()
+    if 0 == max(matchpos)
+        break
     else
-        let matchpos = searchpos('','W'.(a:reverse? 'b':''))
-        if 0 == max(matchpos)
-            break
-        else
-            let nudge = !a:inclusive
-        endif
+        let nudge = !a:inclusive
     endif
   endfor
 
