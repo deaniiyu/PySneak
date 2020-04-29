@@ -1,4 +1,5 @@
 # PySneak
+Py is pun for Python and PinYin<br>
 最近用vim写中文论文，跳转无比痛苦，又找不到合适的插件，
 无奈之下拿[vim-sneak](https://github.com/justinmk/vim-sneak)
 和[vim-PinyinSearch](https://github.com/ppwwyyxx/vim-PinyinSearch)硬着头皮改了一个，输入两个字的拼音首字母跳转。VimL和python都是现学现卖，轻喷。
