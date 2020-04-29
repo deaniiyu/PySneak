@@ -2,7 +2,6 @@ func! sneak#pySearch#Pinyin(table, char, curlin, ttle,reverse)
     call clearmatches()
 py3 << EOF
 import vim,sys,pickle
-from textwrap import wrap
 ENCODING = vim.eval("&fileencoding")
 if not ENCODING or ENCODING == 'none':
     ENCODING = 'utf-8'

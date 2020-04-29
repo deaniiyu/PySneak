@@ -87,12 +87,11 @@ func! sneak#wrap(op, inputlen, reverse, inclusive, label) abort
     if g:pysneak 
         "Mod start
             let s:inputchar = s:getnchars(a:inputlen, a:op) 
-            let s:rstate = a:reverse
-            call Pyhitsearch(s:inputchar, a:reverse)
-            if len(s:pylist)==0
+            call Pyhitsearch(s:inputchar, a:reverse, a:reverse, a:op)
+            if len(s:pyhit)==0
                 call sneak#to(a:op, '', a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
             else
-                call sneak#to(a:op, s:pylist, a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
+                call sneak#to(a:op, s:pyhit, a:inputlen, cnt, 0, a:reverse, a:inclusive, a:label)
             endif
         "Mod end
     else
@@ -112,36 +111,39 @@ func! s:rpt(op, reverse) abort
     return
   endif
 
+  let l:relative_reverse = (a:reverse && !s:st.reverse) || (!a:reverse && s:st.reverse)  
   if g:pysneak
     " Mod start
-      let l:relative_reverse = (a:reverse && !s:rstate) || (!a:reverse && s:rstate)  
-      call Pyhitsearch(s:inputchar, l:relative_reverse) 
-      if len(s:pylist)==0
-         echo 'no hit'
+      call Pyhitsearch(s:inputchar, l:relative_reverse, s:st.reverse, a:op) 
+      if len(s:pyhit)==0
          call sneak#to(a:op, '', s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 0)
       else
-         echo s:pylist
-         call sneak#to(a:op, s:pylist, s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 1)
+         call sneak#to(a:op, s:pyhit, s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 1)
       endif
     "Mod end
   else
-      let l:relative_reverse = (a:reverse && !s:st.reverse) || (!a:reverse && s:st.reverse)
       call sneak#to(a:op, s:st.input, s:st.inputlen, v:count1, 1,
             \ (g:sneak#opt.absolute_dir ? a:reverse : l:relative_reverse), s:st.inclusive, 0)
   endif
 endf
 
 " Mod start
-func! Pyhitsearch(input, reverse)
-  let regsave = @- 
-  if !a:reverse
+func! Pyhitsearch(input, reverse, ireverse, op)
+  if sneak#util#isvisualop(a:op) " if visual mode then quit visual&jump to selection end
+      exec "norm! ". "\<Esc>" . (a:ireverse? "`<":"`>")
+  endif
+  let regsave = @- "persist register content
+  if !a:reverse "yank to current line end, save content in register
       exec "norm! " . "l\"-y\$h" 
   else 
       exec "norm! " . "\"-y0`]"
   endif
   let ttle = @-
-  let @- = regsave 
-  let s:pylist = sneak#pySearch#Pinyin(g:PinyinSearch_Dict, a:input, line('.'), ttle, a:reverse)
+  let @- = regsave "restore register
+  let s:pyhit = sneak#pySearch#Pinyin(g:PinyinSearch_Dict, a:input, line('.'), ttle, a:reverse) " search for match from current position to buff end
+  if sneak#util#isvisualop(a:op) "if visual mode then restore previous selection
+      norm! gv
+  endif
 endf
 "Mod end
 
@@ -337,7 +339,7 @@ func! s:getnchars(n, mode) abort
   let s = ''
   echo g:sneak#opt.prompt
   for i in range(1, a:n)
-    if sneak#util#isvisualop(a:mode) | exe 'norm! gv' | endif "preserve selection
+    if sneak#util#isvisualop(a:mode) | exe 'norm! gv'| endif "preserve selection
     let c = sneak#util#getchar()
     if -1 != index(["\<esc>", "\<c-c>", "\<c-g>", "\<backspace>",  "\<del>"], c)
       return ""
