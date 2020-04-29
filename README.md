@@ -15,6 +15,16 @@ Python 3，文档需要utf8编码
 普通模式下大写S为反向匹配。Visual mode下反向匹配换为大写Z，因为大写S可能被[vim-surround](https://github.com/tpope/vim-surround)占用。Operator pending mode
 下正向反向匹配分别替换为z和Z，原因同上。输入单个字母或符号后可按enter直接跳转。可参考[vim-sneak](https://github.com/justinmk/vim-sneak)的帮助文档。
 ![PySneak](https://user-images.githubusercontent.com/20110035/80567104-0e824f00-8a27-11ea-9916-a6a9a551467c.gif)
+###Custom input length
+原生的sneak支持自定义输入字母个数，我自己把默认数从两位改为五位（输入字母达到5个时自动触发跳转，小于5位时需摁enter跳转），可以提高定位准确度。vimrc设置如下，你可以把5调为你自己认为合适的数字。<br>
+nnoremap <silent> s :<C-U>call sneak#wrap('',           5, 0, 2, 1)<CR>           <br>
+nnoremap <silent> S :<C-U>call sneak#wrap('',           5, 1, 2, 1)<CR><br>
+xnoremap <silent> s :<C-U>call sneak#wrap(visualmode(), 5, 0, 2, 1)<CR><br>
+xnoremap <silent> Z :<C-U>call sneak#wrap(visualmode(), 5, 1, 2, 1)<CR><br>
+onoremap <silent> z :<C-U>call sneak#wrap(v:operator,   5, 0, 2, 1)<CR><br>
+onoremap <silent> Z :<C-U>call sneak#wrap(v:operator,   5, 1, 2, 1)<CR><br>
+效果如下：
+![PySneak2](https://user-images.githubusercontent.com/20110035/80630785-5638c300-8a87-11ea-9d05-2c5233ebb803.gif)
 ## Known Issues
 ~~1. 无法像原生sneak一样用数字进行重复跳转，如5;~~
 2. 不支持sneak的label mode
