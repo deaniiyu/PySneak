@@ -70,6 +70,7 @@ endf
 " Entrypoint for `s`.
 func! sneak#wrap(op, inputlen, reverse, inclusive, label) abort
   let cnt = v:count1 "get count before doing _anything_, else it gets overwritten.
+  let s:rpt_idx = 0 "used to track cursor position relative to its initial position
   let is_similar_invocation = a:inputlen == s:st.inputlen && a:inclusive == s:st.inclusive
   if g:sneak#opt.s_next && is_similar_invocation && (sneak#util#isvisualop(a:op) || empty(a:op)) && sneak#is_sneaking()
     " Repeat motion (clever-s).
@@ -129,8 +130,10 @@ endf
 
 " Mod start
 func! Pyhitsearch(input, reverse, ireverse, op)
+  let s:rpt_idx += a:reverse == s:st.reverse?1:-1
+  let vrevert = (!s:rpt_idx<0 && a:ireverse)||(s:rpt_idx<0 && !a:ireverse)
   if sneak#util#isvisualop(a:op) " if visual mode then quit visual&jump to selection end
-      exec "norm! ". "\<Esc>" . (a:ireverse? "`<":"`>")
+      exec "norm! ". "\<Esc>" . (vrevert? "`<":"`>")
   endif
   let regsave = @- "persist register content
   if !a:reverse "yank to current line end, save content in register
