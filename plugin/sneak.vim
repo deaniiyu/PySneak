@@ -113,19 +113,21 @@ func! s:rpt(op, reverse) abort
   endif
 
   let l:relative_reverse = (a:reverse && !s:st.reverse) || (!a:reverse && s:st.reverse)  
-  if g:pysneak
-    " Mod start
-      call Pyhitsearch(s:inputchar, l:relative_reverse, s:st.reverse, a:op) 
-      if len(s:pyhit)==0
-         call sneak#to(a:op, '', s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 0)
+  for i in range(1, max([1, v:count1]))
+      if g:pysneak
+        " Mod start
+          call Pyhitsearch(s:inputchar, l:relative_reverse, s:st.reverse, a:op) 
+          if len(s:pyhit)==0
+             call sneak#to(a:op, '', s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 0)
+          else
+             call sneak#to(a:op, s:pyhit, s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 1)
+          endif
+        "Mod end
       else
-         call sneak#to(a:op, s:pyhit, s:st.inputlen, v:count1, 1, l:relative_reverse, s:st.inclusive, 1)
+          call sneak#to(a:op, s:st.input, s:st.inputlen, v:count1, 1,
+                \ (g:sneak#opt.absolute_dir ? a:reverse : l:relative_reverse), s:st.inclusive, 0)
       endif
-    "Mod end
-  else
-      call sneak#to(a:op, s:st.input, s:st.inputlen, v:count1, 1,
-            \ (g:sneak#opt.absolute_dir ? a:reverse : l:relative_reverse), s:st.inclusive, 0)
-  endif
+  endfor
 endf
 
 " Mod start
