@@ -4,7 +4,7 @@ Py is pun for Python and PinYin<br>
 无奈之下拿[vim-sneak](https://github.com/justinmk/vim-sneak)
 和[vim-PinyinSearch](https://github.com/ppwwyyxx/vim-PinyinSearch)硬着头皮改了一个，输入两个字的拼音首字母跳转。现学现卖VimL和python，轻喷。
 ## Requirements
-Python 3
+Python 3，文档需要utf8编码
 ## Install
 1. 用插件管理器安装插件，如[vim-plug](https://github.com/junegunn/vim-plug)在vimrc内添加 Plug 'deaniiyu/PySneak'
 2. 在.vimrc内设置插件附带的PySearch.pkl字典路径，let g:PinyinSearch_Dict = “path/to/PySearch.pkl”，将引号内替换为你的实际字典路径
